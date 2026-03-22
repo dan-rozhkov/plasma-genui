@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment } from "react/jsx-runtime";
-import { useState } from "react";
+import { Children, useState, useEffect, useMemo } from "react";
 import { z } from "zod";
 import { defineComponent, createLibrary, useTriggerAction, useFormName, useIsStreaming } from "@openuidev/react-lang";
 import type { PromptOptions } from "@openuidev/react-lang";
@@ -32,12 +32,16 @@ import {
   Divider as PlasmaDivider,
   Breadcrumbs as PlasmaBreadcrumbs,
   Pagination as PlasmaPagination,
+  Table as PlasmaTable,
   Steps as PlasmaSteps,
   Container as PlasmaContainer,
   Row as PlasmaRow,
   Col as PlasmaCol,
-  H1, H2, H3, H4,
-  BodyL, BodyM, BodyS,
+  DsplL, DsplM, DsplS,
+  H1, H2, H3, H4, H5,
+  BodyL, BodyM, BodyS, BodyXS, BodyXXS,
+  TextL, TextM, TextS, TextXS,
+  Cell as PlasmaCell,
 } from "@salutejs/plasma-web";
 
 // ========================================================
@@ -50,24 +54,42 @@ const P = (props: Record<string, unknown>) => props as any;
 // 1. Typography
 // ========================================================
 
+const typographyMap: Record<string, any> = {
+  "dspl-l": DsplL, "dspl-m": DsplM, "dspl-s": DsplS,
+  "h1": H1, "h2": H2, "h3": H3, "h4": H4, "h5": H5,
+  "body-l": BodyL, "body-m": BodyM, "body-s": BodyS, "body-xs": BodyXS, "body-xxs": BodyXXS,
+  "text-l": TextL, "text-m": TextM, "text-s": TextS, "text-xs": TextXS,
+};
+
 export const TextContent = defineComponent({
   name: "TextContent",
   props: z.object({
     text: z.string(),
-    size: z.enum(["h1", "h2", "h3", "h4", "body-l", "body-m", "body-s"]).optional(),
+    size: z.enum([
+      "dspl-l", "dspl-m", "dspl-s",
+      "h1", "h2", "h3", "h4", "h5",
+      "body-l", "body-m", "body-s", "body-xs", "body-xxs",
+      "text-l", "text-m", "text-s", "text-xs",
+    ]).optional(),
+    bold: z.boolean().optional(),
+    color: z.string().optional(),
+    noWrap: z.boolean().optional(),
+    breakWord: z.boolean().optional(),
+    isNumeric: z.boolean().optional(),
+    isItalic: z.boolean().optional(),
   }),
-  description: 'Text block. size: "h1"|"h2"|"h3"|"h4"|"body-l"|"body-m" (default)|"body-s".',
+  description: 'Text block. size: "dspl-l/m/s" (hero), "h1"-"h5" (headings), "body-l/m/s/xs/xxs" (body, default "body-m"), "text-l/m/s/xs" (UI labels). Optional: bold, color, noWrap, breakWord, isNumeric, isItalic.',
   component: ({ props }) => {
-    const text = props.text ?? "";
-    switch (props.size) {
-      case "h1": return _jsx(H1, { children: text });
-      case "h2": return _jsx(H2, { children: text });
-      case "h3": return _jsx(H3, { children: text });
-      case "h4": return _jsx(H4, { children: text });
-      case "body-l": return _jsx(BodyL, { children: text });
-      case "body-s": return _jsx(BodyS, { children: text });
-      default: return _jsx(BodyM, { children: text });
-    }
+    const Comp = typographyMap[props.size ?? "body-m"] ?? BodyM;
+    return _jsx(Comp, P({
+      bold: props.bold,
+      color: props.color,
+      noWrap: props.noWrap,
+      breakWord: props.breakWord,
+      isNumeric: props.isNumeric,
+      isItalic: props.isItalic,
+      children: props.text ?? "",
+    }));
   },
 });
 
@@ -118,6 +140,30 @@ export const ImageDef = defineComponent({
     })),
 });
 
+export const CellDef = defineComponent({
+  name: "Cell",
+  props: z.object({
+    title: z.string().optional(),
+    subtitle: z.string().optional(),
+    label: z.string().optional(),
+    size: z.enum(["l", "m", "s", "xs"]).optional(),
+    contentLeft: z.array(z.any()).optional(),
+    contentRight: z.array(z.any()).optional(),
+    stretching: z.enum(["fixed", "filled", "auto"]).optional(),
+  }),
+  description: 'List cell with title/subtitle/label and optional left/right content slots. size: "l"|"m" (default)|"s"|"xs". stretching: "filled" (default)|"fixed"|"auto". Use contentLeft for Avatar/Icon, contentRight for Badge/Button.',
+  component: ({ props, renderNode }) =>
+    _jsx(PlasmaCell, P({
+      title: props.title,
+      subtitle: props.subtitle,
+      label: props.label,
+      size: props.size ?? "m",
+      stretching: props.stretching ?? "filled",
+      contentLeft: props.contentLeft ? _jsx(Fragment, { children: renderNode(props.contentLeft) }) : undefined,
+      contentRight: props.contentRight ? _jsx(Fragment, { children: renderNode(props.contentRight) }) : undefined,
+    })),
+});
+
 // ========================================================
 // 2. Cards
 // ========================================================
@@ -127,11 +173,13 @@ export const CardDef = defineComponent({
   props: z.object({
     children: z.array(z.any()),
     size: z.enum(["l", "m", "s"]).optional(),
+    background: z.enum(["solid", "none"]).optional(),
   }),
-  description: 'Card container. size: "l"|"m" (default)|"s".',
+  description: 'Card container. size: "l"|"m" (default)|"s". background: "solid" (default)|"none".',
   component: ({ props, renderNode }) =>
     _jsx(PlasmaCard, P({
       size: props.size ?? "m",
+      backgroundType: props.background ?? "solid",
       style: { padding: "16px", width: "100%" },
       children: _jsx(PlasmaCardContent, P({
         style: { display: "flex", flexDirection: "column", gap: "12px" },
@@ -182,13 +230,26 @@ export const ButtonsDef = defineComponent({
   props: z.object({
     buttons: z.array(ButtonDef.ref),
     direction: z.enum(["row", "column"]).optional(),
+    stretch: z.boolean().optional(),
   }),
-  description: 'Group of Button components. direction: "row" (default)|"column".',
-  component: ({ props, renderNode }) =>
-    _jsx("div", {
-      style: { display: "flex", flexDirection: props.direction ?? "row", gap: "8px", flexWrap: "wrap" },
-      children: renderNode(props.buttons),
-    }),
+  description: 'Group of Button components. direction: "row" (default)|"column". stretch: true to make buttons fill equal width.',
+  component: ({ props, renderNode }) => {
+    const children = renderNode(props.buttons);
+    return _jsx("div", {
+      style: {
+        display: "flex",
+        flexDirection: props.direction ?? "row",
+        gap: "8px",
+        flexWrap: props.stretch ? undefined : "wrap",
+        width: props.stretch ? "100%" : undefined,
+      },
+      children: props.stretch
+        ? Children.map(children as React.ReactElement[], (child) =>
+            _jsx("div", { style: { flex: 1, display: "grid" }, children: child })
+          )
+        : children,
+    });
+  },
 });
 
 // ========================================================
@@ -366,10 +427,11 @@ export const BadgeDef = defineComponent({
     text: z.string(),
     view: z.enum(["default", "accent", "positive", "warning", "negative", "dark", "light"]).optional(),
     size: z.enum(["l", "m", "s", "xs"]).optional(),
+    transparent: z.boolean().optional(),
   }),
-  description: 'Badge indicator. view: "default"|"accent"|"positive"|"warning"|"negative"|"dark"|"light". size: "l"|"m" (default)|"s"|"xs".',
+  description: 'Badge indicator. view: "default"|"accent"|"positive"|"warning"|"negative"|"dark"|"light". size: "l"|"m" (default)|"s"|"xs". transparent: false (default)|true — transparent background.',
   component: ({ props }) =>
-    _jsx(PlasmaBadge, P({ text: props.text, view: props.view ?? "default", size: props.size ?? "m" })),
+    _jsx(PlasmaBadge, P({ text: props.text, view: props.view ?? "default", size: props.size ?? "m", transparent: props.transparent ?? false })),
 });
 
 export const ChipDef = defineComponent({
@@ -378,10 +440,11 @@ export const ChipDef = defineComponent({
     text: z.string(),
     view: z.enum(["default", "accent", "secondary", "positive", "warning", "negative"]).optional(),
     size: z.enum(["l", "m", "s", "xs"]).optional(),
+    hasClear: z.boolean().optional(),
   }),
-  description: 'Chip/tag element. view: "default"|"accent"|"secondary"|"positive"|"warning"|"negative". size: "l"|"m" (default)|"s"|"xs".',
+  description: 'Chip/tag element. view: "default"|"accent"|"secondary"|"positive"|"warning"|"negative". size: "l"|"m" (default)|"s"|"xs". hasClear: true (default)|false — show/hide close icon.',
   component: ({ props }) =>
-    _jsx(PlasmaChip, P({ text: props.text, view: props.view ?? "default", size: props.size ?? "m" })),
+    _jsx(PlasmaChip, P({ text: props.text, view: props.view ?? "default", size: props.size ?? "m", hasClear: props.hasClear ?? true })),
 });
 
 export const AvatarDef = defineComponent({
@@ -462,40 +525,71 @@ export const TableDef = defineComponent({
   description: "Data table. columns: Col[] definitions. rows: 2D array of cell values.",
   component: ({ props }) => {
     const cols = (props.columns ?? []).map((c: any) => c.props);
-    const rows = props.rows ?? [];
-    return _jsx("div", {
-      style: { width: "100%", overflowX: "auto" },
-      children: _jsx("table", {
-        style: { width: "100%", borderCollapse: "collapse", fontSize: "14px" },
-        children: _jsxs(Fragment, {
-          children: [
-            _jsx("thead", {
-              children: _jsx("tr", {
-                children: cols.map((c: any, i: number) =>
-                  _jsx("th", {
-                    style: { padding: "10px 12px", textAlign: "left", borderBottom: "2px solid var(--plasma-colors-surfaceLiquid02, #e0e0e0)", fontWeight: 600 },
-                    children: c.label, key: i,
-                  })
-                ),
-              }),
-            }),
-            _jsx("tbody", {
-              children: rows.map((row: any[], ri: number) =>
-                _jsx("tr", {
-                  key: ri,
-                  children: row.map((cell: any, ci: number) =>
-                    _jsx("td", {
-                      style: { padding: "10px 12px", borderBottom: "1px solid var(--plasma-colors-surfaceLiquid02, #e0e0e0)" },
-                      children: String(cell), key: ci,
-                    })
-                  ),
-                })
-              ),
-            }),
-          ],
-        }),
+    const allRows = props.rows ?? [];
+
+    const columns = useMemo(() =>
+      cols.map((c: any, i: number) => ({ id: `col${i}`, label: c.label })),
+      [cols.map((c: any) => c.label).join(",")]
+    );
+
+    const allData = useMemo(() =>
+      allRows.map((row: any[], ri: number) => {
+        const obj: Record<string, any> = { id: String(ri) };
+        row.forEach((cell: any, ci: number) => { obj[`col${ci}`] = String(cell); });
+        return obj;
       }),
-    });
+      [allRows]
+    );
+
+    const perPageList = [5, 10, 20];
+    const [perPage, setPerPage] = useState(10);
+    const [page, setPage] = useState(1);
+
+    const totalPages = Math.max(1, Math.ceil(allData.length / perPage));
+
+    useEffect(() => {
+      if (page > totalPages) setPage(totalPages);
+    }, [totalPages, page]);
+
+    const pageData = useMemo(() =>
+      allData.slice((page - 1) * perPage, page * perPage),
+      [allData, page, perPage]
+    );
+
+    const handlePaginationChange = (_page?: number, _perPage?: number) => {
+      if (_perPage !== undefined && _perPage !== perPage) {
+        setPerPage(_perPage);
+        setPage(1);
+      } else if (_page !== undefined) {
+        setPage(_page);
+      }
+    };
+
+    const showPagination = allData.length > perPageList[0];
+
+    return _jsx(PlasmaTable, P({
+      data: pageData,
+      columns,
+      size: "m",
+      style: { display: "flex", flexDirection: "column", alignItems: "stretch", width: "100%" },
+      classNames: { table: "plasma-table-fw" },
+      bottomContent: showPagination
+        ? _jsx("div", {
+            style: { padding: "12px 0", width: "100%", display: "flex", justifyContent: "center" },
+            children: _jsx(PlasmaPagination, P({
+              size: "xs",
+              value: page,
+              count: allData.length,
+              perPage,
+              perPageList,
+              hasPerPage: true,
+              hasQuickJump: false,
+              onChange: handlePaginationChange,
+              type: "default",
+            })),
+          })
+        : undefined,
+    }));
   },
 });
 
@@ -536,9 +630,9 @@ export const TabsDef = defineComponent({
   name: "Tabs",
   props: z.object({
     items: z.array(TabItemDef.ref),
-    size: z.enum(["l", "m", "s", "xs"]).optional(),
+    size: z.enum(["m", "s", "xs"]).optional(),
   }),
-  description: 'Tabbed container. Each TabItem has a label and content. size: "m" (default)|"l"|"s"|"xs".',
+  description: 'Tabbed container. Each TabItem has a label and content. size: "m" (default)|"s"|"xs".',
   component: ({ props, renderNode }) => {
     const items = props.items ?? [];
     const [active, setActive] = useState(0);
@@ -546,11 +640,12 @@ export const TabsDef = defineComponent({
       style: { width: "100%" },
       children: [
         _jsx(PlasmaTabs, P({
-          size: props.size ?? "m",
+          size: props.size ?? "xs",
           view: "divider" as any,
           children: items.map((tab: any, i: number) =>
             _jsx(PlasmaTabItem, P({
               key: i,
+              size: props.size ?? "xs",
               selected: i === active,
               onClick: () => setActive(i),
               children: tab.props.label,
@@ -695,8 +790,9 @@ export const StackDef = defineComponent({
     align: z.enum(["start", "center", "end", "stretch", "baseline"]).optional(),
     justify: z.enum(["start", "center", "end", "between", "around", "evenly"]).optional(),
     wrap: z.boolean().optional(),
+    padding: z.string().optional(),
   }),
-  description: 'Flex container. direction: "row"|"column" (default). gap: "none"|"xs"|"s"|"m" (default)|"l"|"xl".',
+  description: 'Flex container. direction: "row"|"column" (default). gap: "none"|"xs"|"s"|"m" (default)|"l"|"xl". padding: optional CSS padding (e.g. "2rem").',
   component: ({ props, renderNode }) => {
     const gapMap: Record<string, string> = { none: "0", xs: "4px", s: "8px", m: "16px", l: "24px", xl: "32px" };
     const alignMap: Record<string, string> = { start: "flex-start", center: "center", end: "flex-end", stretch: "stretch", baseline: "baseline" };
@@ -708,6 +804,7 @@ export const StackDef = defineComponent({
         alignItems: props.align ? alignMap[props.align] : undefined,
         justifyContent: props.justify ? justifyMap[props.justify] : undefined,
         flexWrap: props.wrap ? "wrap" : undefined,
+        padding: props.padding,
       },
       children: renderNode(props.children),
     });
@@ -802,7 +899,11 @@ export const plasmaComponentGroups = [
   },
   {
     name: "Content",
-    components: ["Card", "CardHeader", "TextContent", "Link", "Image"],
+    components: ["Card", "CardHeader", "TextContent", "Cell", "Link", "Image"],
+    notes: [
+      '- TextContent "dspl-*" for hero/landing, "h1"-"h5" for headings, "body-*" for paragraphs, "text-*" for UI labels.',
+      '- Use bold prop for emphasis, color for custom text colors.',
+    ],
   },
   {
     name: "Data Display",
@@ -824,7 +925,7 @@ export const plasmaComponentGroups = [
 
 export const plasmaExamples = [
   `Example 1 — Card with text and button:
-root = Stack([TextContent("Welcome to Plasma", "h2"), Card([CardHeader("Getting Started"), TextContent("This is a card."), Buttons([Button("Learn More", {type: "ContinueConversation"}, "accent")])])])`,
+root = Stack([TextContent("Welcome to Plasma", "h2"), Card([CardHeader("Getting Started"), TextContent("This is a card."), Buttons([Button("Learn More", {type: "ContinueConversation"}, "accent")])], "m", "solid")])`,
   `Example 2 — Form:
 root = Stack([TextContent("Contact Us", "h2"), Card([CardHeader("Send a Message"), Input("Name", "Enter your name"), Input("Email", "Enter your email"), TextArea("Message", "Type your message..."), Buttons([Button("Submit", {type: "ContinueConversation"}, "accent"), Button("Cancel", {type: "ContinueConversation"}, "secondary")])])])`,
   `Example 3 — Dashboard:
@@ -839,9 +940,9 @@ export const plasmaPromptOptions: PromptOptions = {
   examples: plasmaExamples,
   additionalRules: [
     "Always wrap top-level content in Stack.",
-    "Use Card for grouped content sections.",
+    'Use Card for grouped content sections. Card background defaults to "solid"; use "none" for transparent cards.',
     "Use CardHeader as the first child of Card for titles.",
-    'Use TextContent with size="h1" or "h2" for headings.',
+    'Use TextContent for all text. Sizes: "dspl-l/m/s" for hero text, "h1"-"h5" for headings, "body-l/m/s/xs/xxs" for body (default "body-m"), "text-l/m/s/xs" for UI labels/captions. Optional: bold, color, isItalic.',
     "Use Buttons to group multiple Button components.",
     "Use TabItem only inside Tabs, AccordionItem only inside Accordion, StepItem only inside Steps.",
     "Use Col only as columns in Table.",
@@ -850,6 +951,9 @@ export const plasmaPromptOptions: PromptOptions = {
     "Use BreadcrumbItem only inside Breadcrumbs.",
     "Use GridRow only inside Grid, use GridCol only inside GridRow.",
     "Use Grid for responsive column-based layouts with breakpoints.",
+    "Do not add padding to the root Stack — padding is applied automatically by the container.",
+    "Form inputs (Input, TextArea, Select) must always be full-width within their container — never restrict their width.",
+    "When using Buttons with 2 or more buttons, always set stretch=true so buttons fill the full width equally.",
   ],
 };
 
@@ -858,7 +962,7 @@ export const plasmaLibrary = createLibrary({
   componentGroups: plasmaComponentGroups,
   components: [
     // Content
-    TextContent, CardHeaderDef, LinkDef, ImageDef,
+    TextContent, CardHeaderDef, CellDef, LinkDef, ImageDef,
     // Cards
     CardDef,
     // Buttons
