@@ -429,9 +429,9 @@ export const BadgeDef = defineComponent({
     size: z.enum(["l", "m", "s", "xs"]).optional(),
     transparent: z.boolean().optional(),
   }),
-  description: 'Badge indicator. view: "default"|"accent"|"positive"|"warning"|"negative"|"dark"|"light". size: "l"|"m" (default)|"s"|"xs". transparent: false (default)|true — transparent background.',
+  description: 'Badge indicator. view: "default"|"accent"|"positive"|"warning"|"negative"|"dark"|"light". size: "l" (default)|"m"|"s"|"xs". transparent: true (default)|false — semi-transparent background.',
   component: ({ props }) =>
-    _jsx(PlasmaBadge, P({ text: props.text, view: props.view ?? "default", size: props.size ?? "m", transparent: props.transparent ?? false })),
+    _jsx(PlasmaBadge, P({ text: props.text, view: props.view ?? "default", size: props.size ?? "l", transparent: props.transparent ?? true })),
 });
 
 export const ChipDef = defineComponent({
@@ -640,12 +640,12 @@ export const TabsDef = defineComponent({
       style: { width: "100%" },
       children: [
         _jsx(PlasmaTabs, P({
-          size: props.size ?? "xs",
+          size: props.size ?? "m",
           view: "divider" as any,
           children: items.map((tab: any, i: number) =>
             _jsx(PlasmaTabItem, P({
               key: i,
-              size: props.size ?? "xs",
+              size: props.size ?? "m",
               selected: i === active,
               onClick: () => setActive(i),
               children: tab.props.label,

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 export type DevicePreset = "mobile" | "tablet" | "desktop";
@@ -8,12 +9,6 @@ interface DeviceSwitcherProps {
   onChange: (device: DevicePreset) => void;
 }
 
-const devices: { key: DevicePreset; label: string; icon: ReactNode }[] = [
-  { key: "mobile", label: "Mobile", icon: <SmartphoneIcon /> },
-  { key: "tablet", label: "Tablet", icon: <TabletIcon /> },
-  { key: "desktop", label: "Desktop", icon: <MonitorIcon /> },
-];
-
 export const DEVICE_WIDTHS: Record<DevicePreset, string> = {
   mobile: "375px",
   tablet: "768px",
@@ -21,6 +16,13 @@ export const DEVICE_WIDTHS: Record<DevicePreset, string> = {
 };
 
 export function DeviceSwitcher({ current, onChange }: DeviceSwitcherProps) {
+  const { t } = useTranslation();
+
+  const devices: { key: DevicePreset; label: string; icon: ReactNode }[] = [
+    { key: "mobile", label: t("device.mobile"), icon: <SmartphoneIcon /> },
+    { key: "tablet", label: t("device.tablet"), icon: <TabletIcon /> },
+    { key: "desktop", label: t("device.desktop"), icon: <MonitorIcon /> },
+  ];
   return (
     <div className="flex items-center gap-0.5 rounded-lg border bg-background p-0.5">
       {devices.map(({ key, label, icon }) => (
@@ -30,10 +32,10 @@ export function DeviceSwitcher({ current, onChange }: DeviceSwitcherProps) {
           title={label}
           onClick={() => onChange(key)}
           className={cn(
-            "rounded-md px-2 py-1.5 transition-colors",
+            "rounded-md px-2 py-1.5",
             current === key
               ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:text-foreground",
+              : "text-muted-foreground",
           )}
         >
           {icon}

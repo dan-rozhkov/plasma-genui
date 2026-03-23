@@ -2,18 +2,36 @@ import { useRef, useState, useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StyleSheetManager } from "styled-components";
 import { FloatingPortal } from "@floating-ui/react";
+import { cn } from "@/lib/utils";
 
 interface PreviewFrameProps {
   children: ReactNode;
   width: string;
   darkMode: boolean;
+  glowing?: boolean;
 }
 
-export function PreviewFrame({ children, width, darkMode }: PreviewFrameProps) {
+export function PreviewFrame({ children, width, darkMode, glowing }: PreviewFrameProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [mountNode, setMountNode] = useState<HTMLDivElement | null>(null);
   const [iframeHead, setIframeHead] = useState<HTMLHeadElement | null>(null);
   const iframeBodyRef = useRef<HTMLElement | null>(null);
+  const [showGlow, setShowGlow] = useState(false);
+  const [fading, setFading] = useState(false);
+
+  useEffect(() => {
+    if (glowing) {
+      setShowGlow(true);
+      setFading(false);
+    } else if (showGlow) {
+      setFading(true);
+      const timer = setTimeout(() => {
+        setShowGlow(false);
+        setFading(false);
+      }, 900);
+      return () => clearTimeout(timer);
+    }
+  }, [glowing]);
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -78,29 +96,37 @@ export function PreviewFrame({ children, width, darkMode }: PreviewFrameProps) {
   }, [mountNode]);
 
   return (
-    <iframe
-      ref={iframeRef}
+    <div
+      className={cn(showGlow && "glow-border", fading && "glow-fade")}
       style={{
-        border: "none",
         width: width === "100%" ? "calc(100% - 6rem)" : width,
-        height: "0",
-        display: "block",
         marginTop: "4rem",
         marginInline: "auto",
         borderRadius: "var(--radius-xl)",
-        overflow: "hidden",
       }}
     >
-      {mountNode &&
-        iframeHead &&
-        createPortal(
-          <StyleSheetManager target={iframeHead}>
-            <FloatingPortal root={iframeBodyRef}>
-              {children}
-            </FloatingPortal>
-          </StyleSheetManager>,
-          mountNode,
-        )}
-    </iframe>
+      <iframe
+        ref={iframeRef}
+        style={{
+          border: "none",
+          width: "100%",
+          height: "0",
+          display: "block",
+          borderRadius: "inherit",
+          overflow: "hidden",
+        }}
+      >
+        {mountNode &&
+          iframeHead &&
+          createPortal(
+            <StyleSheetManager target={iframeHead}>
+              <FloatingPortal root={iframeBodyRef}>
+                {children}
+              </FloatingPortal>
+            </StyleSheetManager>,
+            mountNode,
+          )}
+      </iframe>
+    </div>
   );
 }

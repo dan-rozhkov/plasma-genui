@@ -1,4 +1,5 @@
 import { useRef, useEffect, type KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ export function ChatInput({
   large,
   darkMode,
 }: ChatInputProps) {
+  const { t } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export function ChatInput({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
+          placeholder={t("chat.placeholder")}
           rows={large ? 2 : 1}
           className={cn("resize-none border-0 shadow-none focus-visible:ring-0 text-lg", large ? "min-h-14 max-h-48" : "min-h-10 max-h-40", darkMode && "bg-transparent")}
         />

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { ChatPage } from "@/components/chat/chat-page";
 import { plasmaLibrary, plasmaPromptOptions } from "@/components/genui/library";
 import { mockProcessMessage } from "@/mock/stream";
@@ -30,21 +31,22 @@ const combinedProcessMessage: ProcessMessageFn = (params) => {
 };
 
 function App() {
+  const { t } = useTranslation();
+
   return (
     <ChatPage
       processMessage={combinedProcessMessage}
       library={plasmaLibrary}
       agentName="Plasma UI Demo"
       welcomeMessage={{
-        title: "Plasma UI Generator",
-        description:
-          "Generate UI using Plasma Web components from Sber. Type a message or try an example.",
+        title: t("welcome.title"),
+        description: t("welcome.description"),
       }}
       conversationStarters={[
-        { displayText: "All components", prompt: "Show me all components demo" },
-        { displayText: "Product tabs", prompt: "Show product info with tabs" },
-        { displayText: "Data table", prompt: "Show a table of team members" },
-        { displayText: "Dashboard", prompt: "Show me a status dashboard" },
+        { displayText: t("starters.allComponents"), prompt: "Show me all components demo" },
+        { displayText: t("starters.productTabs"), prompt: "Show product info with tabs", device: "tablet" },
+        { displayText: t("starters.dataTable"), prompt: "Show a table of team members" },
+        { displayText: t("starters.dashboard"), prompt: "Show me a status dashboard" },
       ]}
     />
   );

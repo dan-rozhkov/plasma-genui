@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 export type ViewMode = "preview" | "code";
@@ -8,30 +9,32 @@ interface ViewModeToggleProps {
 }
 
 export function ViewModeToggle({ current, onChange }: ViewModeToggleProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center gap-0.5 rounded-lg border bg-background p-0.5">
       <button
         type="button"
-        title="Preview"
+        title={t("viewMode.preview")}
         onClick={() => onChange("preview")}
         className={cn(
-          "rounded-md px-2 py-1.5 transition-colors",
+          "rounded-md px-2 py-1.5",
           current === "preview"
             ? "bg-accent text-accent-foreground"
-            : "text-muted-foreground hover:text-foreground",
+            : "text-muted-foreground",
         )}
       >
         <EyeIcon />
       </button>
       <button
         type="button"
-        title="Code"
+        title={t("viewMode.code")}
         onClick={() => onChange("code")}
         className={cn(
-          "rounded-md px-2 py-1.5 transition-colors",
+          "rounded-md px-2 py-1.5",
           current === "code"
             ? "bg-accent text-accent-foreground"
-            : "text-muted-foreground hover:text-foreground",
+            : "text-muted-foreground",
         )}
       >
         <CodeIcon />

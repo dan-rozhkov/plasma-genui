@@ -1,15 +1,16 @@
 import { Button } from "@/components/ui/button";
 
-interface ConversationStarter {
+export interface ConversationStarter {
   displayText: string;
   prompt: string;
+  device?: string;
 }
 
 interface WelcomeScreenProps {
   title: string;
   description: string;
   starters: ConversationStarter[];
-  onStarterClick: (prompt: string) => void;
+  onStarterClick: (starter: ConversationStarter) => void;
 }
 
 export function WelcomeScreen({
@@ -29,7 +30,7 @@ export function WelcomeScreen({
           <Button
             key={starter.prompt}
             variant="outline"
-            onClick={() => onStarterClick(starter.prompt)}
+            onClick={() => onStarterClick(starter)}
           >
             {starter.displayText}
           </Button>
